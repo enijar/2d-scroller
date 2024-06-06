@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Game</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overscroll-behavior: none;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: 50%;
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="game">Game not supported in this browser, try another browser.</canvas>
+    <script>
+      /**
+       * @type {HTMLCanvasElement}
+       */
+      const canvas = document.querySelector("#game");
+      const ctx = canvas.getContext("2d");
+
+      canvas.width = 1920;
+      canvas.height = 1080;
+
+      /**
+       * @param {number} min
+       * @param {number} max
+       * @returns {number}
+       */
+      function randInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      /**
+       * @typedef {{width: number, height: number, color: string}} Building
+       * @property {Building} house
+       * @property {Building} shop
+       * @property {Building} skyscraper
+       */
+      const buildingConfig = {
+        house: {
+          width: 130,
+          height: 100,
+          color: "#80611d",
+        },
+        shop: {
+          width: 300,
+          height: 130,
+          color: "#b6173c",
+        },
+        skyscraper: {
+          width: 200,
+          height: 350,
+          color: "#4c4e59",
+        },
+      };
+
+      const buildingTypes = ["house", "shop", "skyscraper"];
+
+      let lastIndex = randInt(0, buildingTypes.length - 1);
+      let x = 0;
+
+      /**
+       * @type {{x: number, buildings: {x: number, type: "house" | "shop" | "skyscraper"}[]}}
+       */
+      const game = {
+        x: 0,
+        speed: 200,
+        buildings: Array.from(Array(20)).map((_, i) => {
+          let index = lastIndex;
+          while (index === lastIndex) {
+            index = randInt(0, buildingTypes.length - 1);
+          }
+          if (i > 0) {
+            x += buildingConfig[buildingTypes[lastIndex]].width;
+          }
+          lastIndex = index;
+          return {
+            x,
+            type: buildingTypes[index],
+          };
+        }),
+      };
+
+      let lastTime = 0;
+
+      /**
+       * @param {DOMHighResTimeStamp} time
+       */
+      function render(time) {
+        const dt = (time - lastTime) / 1000;
+        lastTime = time;
+
+        requestAnimationFrame(render);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(Math.floor(game.x), 0);
+        game.x -= game.speed * dt;
+
+        let offsetX = 0;
+        for (let i = 0, length = game.buildings.length; i < length; i++) {
+          const building = game.buildings[i];
+          const config = buildingConfig[building.type];
+          ctx.strokeStyle = "black";
+          ctx.fillStyle = config.color;
+          ctx.lineWidth = 1;
+          const x = building.x;
+          const y = canvas.height - config.height;
+          ctx.fillRect(x, y, config.width, config.height);
+          ctx.strokeRect(x, y, config.width, config.height);
+          const offscreen = Math.abs(game.x) > Math.abs(x + config.width);
+          if (offscreen) {
+            // Move the building to the end
+            const lastBuilding = game.buildings[(i + length - 1) % length];
+            let index = lastIndex;
+            while (index === lastIndex) {
+              index = randInt(0, buildingTypes.length - 1);
+            }
+            lastIndex = index;
+            building.type = buildingTypes[index];
+            building.x = lastBuilding.x + buildingConfig[lastBuilding.type].width;
+          }
+          offsetX += config.width;
+        }
+
+        ctx.restore();
+      }
+
+      requestAnimationFrame(render);
+    </script>
+  </body>
+</html>
