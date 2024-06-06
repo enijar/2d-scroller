@@ -35,7 +35,7 @@ jobs:
       - name: Upload
         uses: actions/upload-pages-artifact@v3
         with:
-          path: index.html
+          path: ./
 
       - name: Deploy
         id: deployment
